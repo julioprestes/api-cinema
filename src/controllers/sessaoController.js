@@ -1,4 +1,6 @@
 import Sessao from "../models/SessaoModel.js";
+import PadraoLugares from "../models/PadraoModel.js";
+import Sala from "../models/SalaModel.js";
 
 const get = async (req, res) => {
     try {
@@ -44,11 +46,29 @@ const create = async (corpo) => {
         const {
             idFilme,
             idSala,
-            lugares,
             dataInicio,
             dataFim,
             preco
         } = corpo
+        
+        const sala = await Sala.findOne({
+            where: { id: idSala },
+            include: {
+                model: PadraoLugares,
+                as: 'padrao',
+                attributes: ['lugares']
+            }
+        });
+
+        if (!sala) {
+            throw new Error('sala nao encontrada')
+        }
+
+        const lugares = sala.padrao ? sala.padrao.lugares : [];
+
+        if (!lugares) {
+            throw new Error('lugares nao encontrados')
+        }
 
         const response = await Sessao.create({
             idFilme,
@@ -73,11 +93,33 @@ const update = async (corpo, id) => {
             }
         });
 
+
         if (!response) {
             throw new Error('Não achou');
         }
 
-        Object.keys(corpo).forEach((item) => response[item] = corpo[item]);
+        Object.keys(corpo).forEach(async (item) => {
+            response[item] = corpo[item]
+            if ((item === 'idSala') && corpo.idSala !== response.idSala) {
+                const sala = await Sala.findOne({
+                    where: { id: corpo.idSala },
+                    include: {
+                        model: PadraoLugares,
+                        as: 'padrao',
+                        attributes: ['lugares']
+                    }
+                });
+                if (!sala) {
+                    throw new Error('sala nao encontrada')
+                };
+
+                const lugares = sala.padrao ? sala.padrao.lugares : [];
+                
+                if (!lugares) {
+                    throw new Error('lugares nao encontrados')
+                }
+            }
+        });
         await response.save();
 
         return response;

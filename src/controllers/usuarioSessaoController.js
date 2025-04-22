@@ -1,4 +1,5 @@
 import UsuarioSessao from "../models/UsuarioSessaoModel.js";
+import Sessao from "../models/SessaoModel.js";
 
 const get = async (req, res) => {
     try {
@@ -29,6 +30,44 @@ const get = async (req, res) => {
         return res.status(200).send({
             message: 'Dados Encontrados',
             data: response,
+        });
+
+    } catch (error) {
+        return res.status(500).send({
+            message: error.message
+        });
+    }
+}
+
+// get para buscar todos os lugares livres de uma sessao
+
+const getLivres = async (req, res) => {
+    try {
+        const id = req.params.id ? req.params.id.toString().replace(/\D/g, '') : null;
+
+        if (!id) {
+            return res.status(400).send({ 
+                message: 'id invalido',
+            });
+        };
+
+        const response = await Sessao.findOne({
+            where: {
+                id: id
+            }
+        }); 
+        
+        if (!response) {
+            return res.status(404).send('Não Achou')
+        }
+
+        const lugares = response.getDataValue("lugares");
+
+        const livres = lugares.filter(l => l.alocado === false);
+
+        return res.status(200).send({
+            message: "lugares encontrados",
+            data: livres
         });
 
     } catch (error) {
@@ -135,8 +174,48 @@ const destroy = async (req, res) => {
 }
 
 
+// post na usuario_sessoes para criar uma compra
+// 	*informar o codigo do lugar
+// 		* caso o lugar na sessao esdcolhida for vago adicionar ao objeto(lugar) mais uma chave chamada idUsuario com o id do usuario que fez a compra e criar a usuario_sessoes
+// 		* caso lugar ocupado, devolver um erro e nao mudar nada no banco
+// 	* retornar sucesso ou erro, caso sucesso ja com a data e hora da sessao
+
+const compra = async (corpo, res) => {
+    try {
+        const {
+            idSessao,
+            codigoLugar 
+        } = corpo; 
+
+        const sessao = await Sessao.findOne({ 
+            where: {
+                 id: idSessao 
+            }
+        });
+
+        if (!sessao) {
+            return res.status(404).send({ message: 'nao achou a sessao' });
+        }
+
+        const lugares = sessao.getDataValue("lugares");
+        const ocupados = lugares.filter(l => l.alocado === codigoLugar);
+
+        if (lugares[ocupados].alocado) {
+            return res.status(409).send({ message: 'lugar ocupado' }); 
+        }
+
+    } catch (error) {
+        return res.status(500).send({
+            message: error.message
+        });
+    }
+}
+
+
 export default {
     get,
     persist,
-    destroy
+    destroy,
+    getLivres,
+    compra
 }
