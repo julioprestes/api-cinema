@@ -98,9 +98,11 @@ const update = async (corpo, id) => {
             throw new Error('Não achou');
         }
 
-        Object.keys(corpo).forEach(async (item) => {
-            response[item] = corpo[item]
-            if ((item === 'idSala') && corpo.idSala !== response.idSala) {
+        const keys = Object.keys(corpo);
+
+        for (let i = 0; i < keys.length; i++) {
+            const item = keys[i];
+            if (item === 'idSala' && corpo.idSala !== response.idSala) {
                 const sala = await Sala.findOne({
                     where: { id: corpo.idSala },
                     include: {
@@ -118,10 +120,12 @@ const update = async (corpo, id) => {
                 if (!lugares) {
                     throw new Error('lugares nao encontrados')
                 }
-            }
-        });
-        await response.save();
 
+                response.lugares = lugares;
+            }
+        };
+        await response.save();
+        
         return response;
     } catch (error) {
         throw new Error(error.message)

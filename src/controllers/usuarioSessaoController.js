@@ -66,7 +66,7 @@ const getLivres = async (req, res) => {
         const livres = lugares.filter(l => l.alocado === false);
 
         return res.status(200).send({
-            message: "lugares encontrados",
+            message: "lugares encontrados:",
             data: livres
         });
 
@@ -180,36 +180,65 @@ const destroy = async (req, res) => {
 // 		* caso lugar ocupado, devolver um erro e nao mudar nada no banco
 // 	* retornar sucesso ou erro, caso sucesso ja com a data e hora da sessao
 
-const compra = async (corpo, res) => {
+
+const compra = async (req, res) => {
     try {
         const {
             idSessao,
-            codigoLugar 
-        } = corpo; 
-
-        const sessao = await Sessao.findOne({ 
-            where: {
-                 id: idSessao 
-            }
-        });
+            idUsuario,
+            codigoLugar,
+            valorAtual
+        } = req.body; 
+        
+        const sessao = await Sessao.findOne({ where: { id: idSessao } });
 
         if (!sessao) {
             return res.status(404).send({ message: 'nao achou a sessao' });
         }
 
         const lugares = sessao.getDataValue("lugares");
-        const ocupados = lugares.filter(l => l.alocado === codigoLugar);
+        const aux = lugares.findIndex(l => l.lugar === codigoLugar);
 
-        if (lugares[ocupados].alocado) {
-            return res.status(409).send({ message: 'lugar ocupado' }); 
+        if (aux === -1) {
+            return res.status(404).send({ message: 'Lugar não encontrado' });
         }
+
+        if (lugares[aux].alocado) {
+            return res.status(400).send({ message: 'lugar ocupado' });
+        }
+
+        lugares[aux].alocado = true;
+        lugares[aux].idUsuario = idUsuario;
+
+        // Atualiza sessao
+        await Sessao.update(
+            { lugares },
+            { where: { id: idSessao } }
+        );
+
+        // Cria o registro
+        await UsuarioSessao.create({
+            idSessao,
+            idUsuario,
+            valorAtual,
+        });
+
+
+        return res.status(201).send({
+            message: 'Compra realizada com sucesso!',
+            data: {
+                dataHora: sessao.dataHora,
+                lugar: lugares[aux]
+            }
+        });
 
     } catch (error) {
         return res.status(500).send({
             message: error.message
         });
     }
-}
+};
+
 
 
 export default {
