@@ -52,7 +52,7 @@ Sessao.belongsTo(Sala, {
 });
 
 Sessao.belongsTo(Filme, {
-    as: 'padrao',
+    as: 'filme',
     onUpdate: 'NO ACTION',
     onDelete: 'NO ACTION',
     foreignKey: {

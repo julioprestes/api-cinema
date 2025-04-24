@@ -1,5 +1,6 @@
 import UsuarioSessao from "../models/UsuarioSessaoModel.js";
 import Sessao from "../models/SessaoModel.js";
+import Filme from "../models/FilmeModel.js";
 
 const get = async (req, res) => {
     try {
@@ -15,7 +16,6 @@ const get = async (req, res) => {
                 data: response,
             });
         }
-
         
         const response = await UsuarioSessao.findOne({
             where: {
@@ -43,7 +43,7 @@ const get = async (req, res) => {
 
 const getLivres = async (req, res) => {
     try {
-        const id = req.params.id ? req.params.id.toString().replace(/\D/g, '') : null;
+        const id = req.params.id? req.params.id.toString().replace(/\D/g, '') : null;
 
         if (!id) {
             return res.status(400).send({ 
@@ -76,6 +76,51 @@ const getLivres = async (req, res) => {
         });
     }
 }
+
+//* Listar todas as sessoes compradas do usuario X, filme horario e sala
+
+const getUsuario = async (req, res) => {
+    try {
+        const id = req.params.idUsuario? req.params.idUsuario.toString().replace(/\D/g, '') : null;
+
+        if (!id) {
+            return res.status(400).send({ 
+                message: 'id do usuario invalido',
+            });
+        };
+
+        const sessoes = await UsuarioSessao.findAll({
+            where: { idUsuario: id },
+            include: [
+                {
+                    model: Sessao,
+                    as: 'sessao', 
+                    attributes: ['id', 'dataInicio', 'dataFim', 'idSala'],
+                    include: [
+                        {
+                            model: Filme,
+                            as: 'filme',
+                            attributes: ['nome'],
+                        }
+                    ]
+                }
+            ]
+        });
+
+        if (!sessoes.length) {
+            return res.status(404).send({ message: 'usuario nao tem sessao' });
+        }
+
+        return res.status(200).send({
+            message: `sessões compradas pelo usuario ${id}`,
+            data: sessoes
+        });
+
+    } catch (error) {
+        return res.status(500).send({ message: error.message });
+    }
+};
+
 
 const create = async (corpo) => {
     try {
@@ -173,13 +218,7 @@ const destroy = async (req, res) => {
     }
 }
 
-
-// post na usuario_sessoes para criar uma compra
-// 	*informar o codigo do lugar
-// 		* caso o lugar na sessao esdcolhida for vago adicionar ao objeto(lugar) mais uma chave chamada idUsuario com o id do usuario que fez a compra e criar a usuario_sessoes
-// 		* caso lugar ocupado, devolver um erro e nao mudar nada no banco
-// 	* retornar sucesso ou erro, caso sucesso ja com a data e hora da sessao
-
+// post  para criar uma compra
 
 const compra = async (req, res) => {
     try {
@@ -209,6 +248,9 @@ const compra = async (req, res) => {
 
         lugares[aux].alocado = true;
         lugares[aux].idUsuario = idUsuario;
+        if (lugares[aux] && 'cancelado' in lugares[aux]) {
+            delete lugares[aux].cancelado;
+        }
 
         // Atualiza sessao
         await Sessao.update(
@@ -239,6 +281,62 @@ const compra = async (req, res) => {
     }
 };
 
+//* cancelar uma compra da sessao (NAO EXCLUIR)
+
+const cancela = async (req, res) => {
+    try {
+        const {
+            idSessao,
+            codigoLugar,
+        } = req.body; 
+        
+        const sessao = await Sessao.findOne({ where: { id: idSessao } });
+
+        if (!sessao) {
+            return res.status(404).send({ message: 'nao achou a sessao' });
+        }
+
+        const lugares = sessao.getDataValue("lugares");
+        const aux = lugares.findIndex(l => l.lugar === codigoLugar);
+
+        if (aux === -1) {
+            return res.status(404).send({ message: 'Lugar não encontrado' });
+        }
+
+        if (!lugares[aux].alocado) {
+                return res.status(404).send({ message: 'Lugar esta livre' });
+            }
+        
+        if (lugares[aux].alocado) {
+            lugares[aux].alocado = false;
+            lugares[aux].cancelado = 'cancelado';
+        }
+        
+        // Atualiza sessao
+        await Sessao.update(
+            { lugares },
+            { where: { id: idSessao } }
+        );
+
+        // Exclui o registro
+        await UsuarioSessao.destroy({
+            idSessao,
+        });
+
+        return res.status(201).send({
+            message: 'Cancelamento realizado com sucesso!',
+            data: {
+                dataHora: sessao.dataHora,
+                lugar: lugares[aux]
+            }
+        });
+
+    } catch (error) {
+        return res.status(500).send({
+            message: error.message
+        });
+    }
+};
 
 
 export default {
@@ -246,5 +344,7 @@ export default {
     persist,
     destroy,
     getLivres,
-    compra
+    getUsuario,
+    compra,
+    cancela
 }

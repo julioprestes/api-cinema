@@ -1,6 +1,7 @@
 import Sessao from "../models/SessaoModel.js";
 import PadraoLugares from "../models/PadraoModel.js";
 import Sala from "../models/SalaModel.js";
+import { sequelize } from "../config/postgres.js";
 
 const get = async (req, res) => {
     try {
@@ -39,8 +40,39 @@ const get = async (req, res) => {
         });
     }
 }
-// pegar o id da sala, e buscar o padrao de lugares da sala. Pegar o JSON e criar
-// a sessao de lugares
+
+const getRelatorio = async (req, res) => {
+    try {
+        const idSessao = req.params.id ? req.params.id.toString().replace(/\D/g, '') : null;
+
+        const registros = await sequelize.query(`
+                select
+                    count(*) as contagem,
+                    sum(valor_atual) as soma
+                from usuarios_sessoes
+                where id_sessao = ${idSessao}
+            `).then((a) => a[0][0]);
+
+        console.log(registros);
+        
+
+        
+        if (!registros.contagem) {
+            return res.status(404).send({ message: 'nenhuma venda na sessao' });
+        }
+
+
+        return res.status(200).send({
+            idSessao,
+            soma: registros.soma,
+            totalAssentos: registros.contagem,
+        });
+
+    } catch (error) {
+        return res.status(500).send({ message: error.message });
+    }
+};
+
 const create = async (corpo) => {
     try {
         const {
@@ -190,6 +222,7 @@ const destroy = async (req, res) => {
 
 export default {
     get,
+    getRelatorio,
     persist,
     destroy
 }
