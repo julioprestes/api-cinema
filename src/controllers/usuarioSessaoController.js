@@ -226,7 +226,6 @@ const compra = async (req, res) => {
             idSessao,
             idUsuario,
             codigoLugar,
-            valorAtual
         } = req.body; 
         
         const sessao = await Sessao.findOne({ where: { id: idSessao } });
@@ -262,7 +261,7 @@ const compra = async (req, res) => {
         await UsuarioSessao.create({
             idSessao,
             idUsuario,
-            valorAtual,
+            valorAtual: sessao.getDataValue("preco"),
         });
 
 
