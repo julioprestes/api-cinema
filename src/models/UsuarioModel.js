@@ -35,7 +35,16 @@ const Usuario = sequelize.define(
         estudante: {
             type: DataTypes.BOOLEAN,
             defaultValue: false,
+        },
+        codigoSenha: {
+            field: 'codigo_senha',
+            type: DataTypes.STRING(255),
+        },
+        codigoSenhaExpiracao: {
+            field: 'codigo_senha_expiracao',
+            type: DataTypes.DATE,
         }
+        
     },
     {
         freezeTableName: true,

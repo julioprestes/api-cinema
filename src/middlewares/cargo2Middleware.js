@@ -30,7 +30,7 @@ export default async (req, res, next) => {
 
         console.log(usuario.cargo.id);
 
-        if (usuario.cargo.id !== 1) {
+        if (usuario.cargo.id !== 2) {
             return res.status(404).send({
                 message: 'Cargo do usuário incorreto'
             });

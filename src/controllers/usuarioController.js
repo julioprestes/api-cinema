@@ -2,6 +2,7 @@ import Usuario from "../models/UsuarioModel.js";
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import Cargo from "../models/CargoModel.js";
+import sendMail from "../utils/email.js";
 
 const get = async (req, res) => {
     try {
@@ -52,6 +53,7 @@ const create = async (req, res) => {
             estudante
         } = req.body
 
+        console.log(req.body); 
         const verificaEmail = await Usuario.findOne({
             where: {
                 email
@@ -77,7 +79,10 @@ const create = async (req, res) => {
             estudante
         });
 
-        return response;
+        return res.status(201).send({
+            message: 'Criado com sucesso!',
+            data: response
+        });
     } catch (error) {
         throw new Error(error.message)
     }
@@ -121,7 +126,48 @@ const login = async (req, res) => {
             message: error.message
         });
     }
-}
+};
+
+const recuperarSenha = async (req, res) => {
+    try {
+        const { 
+            email
+        } = req.body;
+    
+        const user = await Usuario.findOne({
+            where: {
+                email,
+            }
+        });
+        if (!user){
+            return res.status(400).send ({
+                message: 'Usuario ou senha incorretos'
+            });
+        };
+
+        const gerarCodigo = () => Math.random().toString(36).slice(2);
+        const codigo = gerarCodigo();
+        const expiracao = new Date(Date.now() + 30 * 60 * 1000);
+    
+        user.codigoSenha = codigo;
+        user.codigoSenhaExpiracao = expiracao;
+
+        await user.save();
+
+        console.log("enviando email");
+
+        await sendMail(user.email, user.nome, codigo, 'Recuperar senha');
+
+        return res.status(200).send({
+            message: 'codigo enviado',
+        })
+    
+    } catch (error) {
+        return res.status(500).send({
+            message: error.message
+        });
+    }
+};
 
 const getDataByToken = async (req, res) => {
     try {
@@ -166,7 +212,7 @@ const getDataByToken = async (req, res) => {
             message: error.message
         });
     }
-}
+};
 
 const update = async (corpo, id) => {
     try {
@@ -187,14 +233,14 @@ const update = async (corpo, id) => {
     } catch (error) {
         throw new Error(error.message)
     }
-}
+};
 
 const persist = async (req, res) => {
     try {
         const id = req.params.id ? req.params.id.toString().replace(/\D/g, '') : null;
 
         if (!id) {
-            const response = await create(req.body)
+            const response = await create(req, res)
             return res.status(201).send({
                 message: 'Criado com sucesso!',
                 data: response
@@ -211,7 +257,7 @@ const persist = async (req, res) => {
             message: error.message
         });
     }
-}
+};
 
 const destroy = async (req, res) => {
     try {
@@ -242,12 +288,13 @@ const destroy = async (req, res) => {
             message: error.message
         });
     }
-}
+};
 
 export default {
     get,
     persist,
     destroy,
     login,
-    getDataByToken
+    getDataByToken,
+    recuperarSenha
 }

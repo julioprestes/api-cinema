@@ -23,6 +23,10 @@ const Filme = sequelize.define(
         duracao: {
             type: DataTypes.INTEGER,
             allowNull: false,
+        },
+        imagemLink: {
+            field: 'imagem-link',
+            type: DataTypes.TEXT
         }
     },
     {
