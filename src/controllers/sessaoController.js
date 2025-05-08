@@ -125,7 +125,6 @@ const update = async (corpo, id) => {
             }
         });
 
-
         if (!response) {
             throw new Error('Não achou');
         }
@@ -134,6 +133,8 @@ const update = async (corpo, id) => {
 
         for (let i = 0; i < keys.length; i++) {
             const item = keys[i];
+
+            // Caso especial para idSala
             if (item === 'idSala' && corpo.idSala !== response.idSala) {
                 const sala = await Sala.findOne({
                     where: { id: corpo.idSala },
@@ -144,25 +145,29 @@ const update = async (corpo, id) => {
                     }
                 });
                 if (!sala) {
-                    throw new Error('sala nao encontrada')
-                };
+                    throw new Error('sala nao encontrada');
+                }
 
                 const lugares = sala.padrao ? sala.padrao.lugares : [];
                 
                 if (!lugares) {
-                    throw new Error('lugares nao encontrados')
+                    throw new Error('lugares nao encontrados');
                 }
 
                 response.lugares = lugares;
+            } else {
+                // Atualizar os outros campos diretamente
+                response[item] = corpo[item];
             }
-        };
+        }
+
         await response.save();
         
         return response;
     } catch (error) {
-        throw new Error(error.message)
+        throw new Error(error.message);
     }
-}
+};
 
 const persist = async (req, res) => {
     try {
