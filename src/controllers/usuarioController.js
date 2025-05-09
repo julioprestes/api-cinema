@@ -240,18 +240,14 @@ const persist = async (req, res) => {
         const id = req.params.id ? req.params.id.toString().replace(/\D/g, '') : null;
 
         if (!id) {
-            const response = await create(req, res)
-            return res.status(201).send({
-                message: 'Criado com sucesso!',
-                data: response
-            });
+            return await create(req, res);
         }
 
         const response = await update(req.body, id);
-            return res.status(201).send({
-                message: 'Atualizado com sucesso!',
-                data: response
-            });
+        return res.status(200).send({
+            message: 'Atualizado com sucesso!',
+            data: response
+        });
     } catch (error) {
         return res.status(500).send({
             message: error.message
