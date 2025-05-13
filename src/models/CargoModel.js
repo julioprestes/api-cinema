@@ -21,5 +21,4 @@ const Cargo = sequelize.define(
     }
 );
 
-
 export default Cargo;
