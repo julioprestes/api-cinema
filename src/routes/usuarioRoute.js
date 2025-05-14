@@ -4,11 +4,11 @@ import validaMiddleware from "../middlewares/validaMiddleware.js";
 
 export default (app) => {
     app.get('/usuario/info-by-token',validaMiddleware, cargoMiddleware, usuarioController.getDataByToken);
-    app.get('/usuario', usuarioController.get);
-    app.get('/usuario/:id', usuarioController.get);
+    app.get('/usuario', validaMiddleware, usuarioController.get);
+    app.get('/usuario/:id',validaMiddleware, usuarioController.get);
     app.post('/usuario', usuarioController.persist);
-    app.patch('/usuario/:id', usuarioController.persist);
-    app.delete('/usuario/:id', usuarioController.destroy);
-    app.post('/usuario/login',validaMiddleware, usuarioController.login);
-    app.post('/usuario/recuperar-senha',validaMiddleware, usuarioController.recuperarSenha);
+    app.patch('/usuario/:id',validaMiddleware, usuarioController.persist);
+    app.delete('/usuario/:id',validaMiddleware, usuarioController.destroy);
+    app.post('/usuario/login', usuarioController.login);
+    app.post('/usuario/recuperar-senha', usuarioController.recuperarSenha);
 }
