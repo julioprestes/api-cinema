@@ -319,7 +319,7 @@ const cancela = async (req, res) => {
 
         // Exclui o registro
         await UsuarioSessao.destroy({
-            idSessao,
+            where: { idSessao }
         });
 
         return res.status(201).send({

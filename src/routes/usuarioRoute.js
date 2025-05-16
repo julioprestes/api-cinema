@@ -11,4 +11,5 @@ export default (app) => {
     app.delete('/usuario/:id',validaMiddleware, usuarioController.destroy);
     app.post('/usuario/login', usuarioController.login);
     app.post('/usuario/recuperar-senha', usuarioController.recuperarSenha);
+    app.post('/usuario/redefinir-senha', usuarioController.redefinirSenha);
 }

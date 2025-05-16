@@ -16,4 +16,4 @@
 //     await Sessao.sync({ force:true });
 //     await UsuarioSessao.sync({ force:true });
 //     await Parametro.sync({ force:true });
-// })();
+// })();   

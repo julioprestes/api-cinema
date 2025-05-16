@@ -171,37 +171,40 @@ const destroy = async (req, res) => {
     try {
         const id = req.params.id ? req.params.id.toString().replace(/\D/g, '') : null;
         if (!id) {
-            res.status(400).send('informa ai paezon')
+            return res.status(400).send('informa ai paezon');
         }
 
         const response = await Filme.findOne({
-            where: {
-                id
-            }
+            where: { id }
         });
 
         if (!response) {
-            return res.status(404).send('nao achou')
-        }   
-        
-        const caminhoImagem = path.resolve(response.imagemLink);
-        fs.unlink(caminhoImagem, (err) => {
-            if (err) {
-                console.log('erro ao deletar arquivo');
-                return
+            return res.status(404).send('nao achou');
+        }
+
+        // Faz uma cópia dos dados antes de destruir
+        const filmeExcluido = { ...response.dataValues };
+
+        // Só tenta deletar a imagem se existir imagemLink
+        if (response.imagemLink) {
+            const caminhoImagem = path.resolve(response.imagemLink);
+            try {
+                await fs.promises.unlink(caminhoImagem);
+                console.log('arquivo deletado com sucesso');
+            } catch (err) {
+                console.log('erro ao deletar arquivo:', err.message);
             }
-            console.log('arquivo deletado com sucesso');
-            
-        })
+        }
 
         await response.destroy();
 
         return res.status(200).send({
             message: 'registro excluido',
-            data: response
-        })
+            data: filmeExcluido
+        });
 
     } catch (error) {
+        console.error('Erro ao excluir filme:', error);
         return res.status(500).send({
             message: error.message
         });
